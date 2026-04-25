@@ -42,27 +42,42 @@ require('dotenv').config();
 
 const app = express();
 
-// ── CORS Configuration ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// ✅ CORS CONFIG (handles Vercel + local + preview URLs)
+// ─────────────────────────────────────────────────────────────
 const allowedOrigins = [
-  process.env.FRONTEND_URL, // from Render env
-  "https://note-vault-lovat.vercel.app" // your Vercel URL
+  process.env.FRONTEND_URL, // production URL from Render env
+  "https://note-vault-neon.vercel.app", // your main Vercel domain
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
+    // allow requests with no origin (like Postman)
+    if (!origin) return callback(null, true);
+
+    // allow exact matches
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+
+    // allow all Vercel preview deployments automatically
+    if (origin.endsWith(".vercel.app")) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
 }));
 
-// ── Middleware ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// ✅ MIDDLEWARE
+// ─────────────────────────────────────────────────────────────
 app.use(express.json());
 
-// ── Database ───────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// ✅ DATABASE CONNECTION
+// ─────────────────────────────────────────────────────────────
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => {
@@ -70,30 +85,42 @@ mongoose.connect(process.env.MONGODB_URI)
     process.exit(1);
   });
 
-// ── Routes ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// ✅ ROUTES
+// ─────────────────────────────────────────────────────────────
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/notes', require('./routes/notes'));
 
-// ── Health Check ───────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// ✅ HEALTH CHECK (important for Render)
+// ─────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
-// ── 404 Handler ────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// ✅ 404 HANDLER
+// ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// ── Global Error Handler ───────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// ✅ GLOBAL ERROR HANDLER
+// ─────────────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
-  console.error(err);
+  console.error("🔥 ERROR:", err.message);
+
   res.status(err.status || 500).json({
-    message: err.message || 'Internal server error'
+    message: err.message || 'Internal server error',
   });
 });
 
-// ── Start Server ───────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// ✅ START SERVER
+// ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
