@@ -96,7 +96,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     setError('');
     try {
-      const { data } = await api.post('/api/auth/signup', {
+      const { data } = await api.post('/auth/signup', {
         name,
         email,
         password,
@@ -117,7 +117,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     setError('');
     try {
-      const { data } = await api.post('/api/auth/login', {
+      const { data } = await api.post('/auth/login', {
         email,
         password,
       });
